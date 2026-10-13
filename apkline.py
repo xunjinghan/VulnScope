@@ -29,8 +29,8 @@ CFG = {
     "kali_vm": "kali-linux-2026.2-virtualbox-amd64",
     "kali_user": "kali",
     "kali_pass": "kali",
-    "phone": "192.168.31.66:5555",
-    "proxy_host": "192.168.31.194",
+    "phone": "192.168.x.x:5555",
+    "proxy_host": "192.168.x.x",
     # 2026-10-12 21:52 鏀癸細瀹夸富 8080 琚?Steam(steamwebhelper) 鍗犵敤锛孷Box 杞彂
     # mitm8080 鍘熷厛 hostIP 涓虹┖锛堢粦 0.0.0.0锛屽灞€鍩熺綉鏁炲紑锛夈€傜幇鏀逛负 127.0.0.1:18080 -> guest:8080銆?    # 娉ㄦ剰锛歡uest 鍐?mitmdump 浠嶇洃鍚?8080锛堜笉鏀?Kali 渚э級锛屽彧鏀瑰涓讳晶鏄犲皠绔彛銆?    "proxy_port": 18080,
     "host_only_ip": "192.168.56.1",

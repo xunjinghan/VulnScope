@@ -21,6 +21,7 @@ except Exception:  # noqa: BLE001
 from crawl import crawl
 from guard import assert_target_allowed
 from llm import ask_doubao, available
+from evidence import Evidence, EvidenceStore
 
 PROMPT_TMPL = """你是 Web 安全测试助手。下面是从一个【授权靶场】抓到的攻击面候选点（JSON 数组）。
 请逐个判断。要求严格按格式输出，不要输出其它内容，不要编造未给出的 URL。
@@ -130,6 +131,43 @@ def main():
     json_path.write_text(json.dumps(result, ensure_ascii=False, indent=1), encoding="utf-8")
     print(f"      ✅ 报告：{out_path}")
     print(f"      ✅ 原始数据：{json_path}")
+
+    # [新增] 结构化证据存储：解析 AI 判定结果，存入 EvidenceStore
+    if ai_sections:
+        print("[5/5] 结构化证据存储…")
+        store = EvidenceStore()
+        ev_count = 0
+        import re
+        for section in ai_sections:
+            # 解析每条 AI 判定：[N] URL=... 参数=...
+            blocks = re.split(r"\n(?=\[\d+\])", section.strip())
+            for block in blocks:
+                m = re.match(r"\[(\d+)\]\s*URL=(\S+)\s*参数=(\S+).*?漏洞类型：(.+?)\s*可能性：(.+?)\s*理由：(.+?)(?:\n|$)", block, re.DOTALL)
+                if not m:
+                    continue
+                idx, url, param, vtype, likelihood, reason = m.groups()
+                vtype = vtype.strip()
+                if vtype in ("无明显问题", ""):
+                    continue  # 阴性结果不存为漏洞证据（阴性清单另行记录）
+                sev_map = {"高": "high", "中": "medium", "低": "low"}
+                ev = Evidence(
+                    vuln_id=f"SCAN-{datetime.datetime.now():%Y%m%d}-{ev_count+1:03d}",
+                    vuln_type=vtype,
+                    severity=sev_map.get(likelihood.strip(), "info"),
+                    endpoint=url.strip(),
+                    parameter=param.strip(),
+                    description=reason.strip(),
+                    status="unverified",
+                    created_by="scan.py AI判定",
+                    tags=["ai-drafted", "needs-manual-verify"],
+                )
+                store.add(ev)
+                ev_count += 1
+        if ev_count:
+            print(f"      ✅ 已存 {ev_count} 条待验证证据到 EvidenceStore")
+        else:
+            print("      (无高/中/低可疑点，未存证据)")
+
     return 0
 
 

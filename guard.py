@@ -249,3 +249,46 @@ if __name__ == "__main__":
             print(f"✅ 允许: {u}")
         except Exception as e:  # noqa: BLE001
             print(f"❌ {u}\n   {e}")
+
+
+# ============================================================
+# 操作级安全拦截（集成 intercept.py）
+# ============================================================
+_interceptor = None
+
+def _get_interceptor():
+    """懒加载 Interceptor 单例。"""
+    global _interceptor
+    if _interceptor is None:
+        try:
+            from intercept import Interceptor
+            _interceptor = Interceptor()
+        except ImportError:
+            _interceptor = False  # 标记为不可用，避免反复尝试
+    return _interceptor if _interceptor is not False else None
+
+
+def assert_operation_safe(tool: str, operation_input: str) -> bool:
+    """操作级安全检查（集成 intercept.py）。
+
+    在执行危险操作前调用，返回 True 表示允许，False 表示拒绝。
+    与 assert_target_allowed 互补：
+    - assert_target_allowed: 目标层面（只能扫内网）
+    - assert_operation_safe: 操作层面（危险命令拦截）
+
+    用法:
+        if not assert_operation_safe("shell", "rm -rf /"):
+            return  # 被拦截
+    """
+    inter = _get_interceptor()
+    if inter is None:
+        return True  # intercept 模块不可用时放行（不阻塞主流程）
+    decision = inter.check(tool, operation_input)
+    if decision.action == "deny":
+        print(f"[INTERCEPT-DENY] {tool}: {decision.reason}")
+        return False
+    if decision.action == "ask":
+        # 非交互环境下 ask 默认拒绝（安全优先）
+        print(f"[INTERCEPT-ASK] {tool}: 需要人工审批，非交互模式默认拒绝")
+        return False
+    return True
