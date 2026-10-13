@@ -1,0 +1,64 @@
+{
+  "rules": [
+    {
+      "id": "builtin-001",
+      "name": "禁止删除文件",
+      "pattern": "\\b(rm|del|erase|unlink|Remove-Item)\\b.*(-rf?|--force|/f|/s)",
+      "action": "deny",
+      "description": "禁止递归强制删除文件",
+      "builtin": true,
+      "enabled": true,
+      "priority": 0
+    },
+    {
+      "id": "builtin-002",
+      "name": "禁止格式化磁盘",
+      "pattern": "\\b(format|mkfs|diskpart)\\b",
+      "action": "deny",
+      "description": "禁止格式化磁盘或分区",
+      "builtin": true,
+      "enabled": true,
+      "priority": 0
+    },
+    {
+      "id": "builtin-003",
+      "name": "禁止修改系统关键文件",
+      "pattern": "(/etc/passwd|/etc/shadow|/etc/sudoers|C:\\\\Windows\\\\System32\\\\config\\\\)",
+      "action": "deny",
+      "description": "禁止修改系统关键配置文件",
+      "builtin": true,
+      "enabled": true,
+      "priority": 0
+    },
+    {
+      "id": "builtin-004",
+      "name": "禁止公网扫描",
+      "pattern": "\\b(nmap|masscan|zmap)\\b.*(?!127\\.|10\\.|192\\.168\\.|172\\.(1[6-9]|2[0-9]|3[01]))",
+      "action": "deny",
+      "description": "禁止扫描公网 IP（只允许内网）",
+      "builtin": true,
+      "enabled": true,
+      "priority": 1
+    },
+    {
+      "id": "builtin-005",
+      "name": "写操作需审批",
+      "pattern": "\\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE)\\b",
+      "action": "ask",
+      "description": "数据库写操作需要人工审批",
+      "builtin": true,
+      "enabled": true,
+      "priority": 2
+    },
+    {
+      "id": "builtin-006",
+      "name": "文件上传需审批",
+      "pattern": "\\b(curl|wget|Invoke-WebRequest)\\b.*(-F|--form|--upload-file)",
+      "action": "ask",
+      "description": "文件上传操作需要人工审批",
+      "builtin": true,
+      "enabled": true,
+      "priority": 2
+    }
+  ]
+}
