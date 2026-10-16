@@ -52,7 +52,8 @@ def cmd_verify(args):
 def cmd_evidence_list(args):
     from evidence import EvidenceStore
     store = EvidenceStore()
-    evidences = store.list(status=args.status) if args.status else store.list()
+    # 修复：EvidenceStore 暴露的是 list_all() / list_by_status()，原实现调用了不存在的 list()
+    evidences = store.list_by_status(args.status) if args.status else store.list_all()
     if not evidences:
         print("(无证据记录)")
         return
@@ -63,8 +64,9 @@ def cmd_evidence_list(args):
 def cmd_evidence_export(args):
     from evidence import EvidenceStore
     store = EvidenceStore()
-    report = store.export_report(args.output)
-    print(f"已导出 {report['total']} 条证据到 {args.output}")
+    # 修复：export_report() 返回的是写入路径（字符串），不是带 total 的 dict
+    path = store.export_report(args.output)
+    print(f"已导出 {len(store.list_all())} 条证据到 {path}")
 
 
 def cmd_guard_check(args):
@@ -86,10 +88,14 @@ def cmd_intercept_check(args):
 def cmd_llm_pool_status(args):
     from llm_pool import default_pool
     pool = default_pool()
+    # 修复：LLMPool 的公开接口是 health_check()（返回 {name: {...}}），
+    # 原实现访问了不存在的 pool.models / pool.get_circuit()
+    health = pool.health_check()
     print("模型池状态:")
-    for cfg in pool.models:
-        state = pool.get_circuit(cfg.provider, cfg.model)
-        print(f"  {cfg.provider}/{cfg.model} priority={cfg.priority} state={state.state.name} failures={state.failures}")
+    for name, info in health.items():
+        state = info.get("state") or {}
+        print(f"  {info.get('provider')}/{name} priority={info.get('priority')} "
+              f"available={info.get('available')} failures={state.get('failures', 0)}")
 
 
 def main():

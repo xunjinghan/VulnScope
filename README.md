@@ -379,6 +379,12 @@ MIT License
 
 ---
 
+## 演示
+
+![guard / intercept / llm-pool 实测](docs/demo.png)
+
+> 上面是真实输出：**回环靶场放行、公网目标被拒、危险命令被拦**（模型池名称已脱敏）。
+
 ## 快速开始
 
 ```bash
