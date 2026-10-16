@@ -1,5 +1,7 @@
 ﻿# VulnScope — AI 自动化漏洞挖掘工具集
 
+**EN** — Automated vulnerability-hunting pipeline: crawl → LLM triage → **non-destructive verify** → report. Guardrails are hard-coded (loopback/intranet only, read-only by default) and every finding is stored with a sha256.
+
 > 爬虫 + AI 判定 + 非破坏性验证 + 报告生成 的完整流水线。把"安全研究员的直觉"变成可复现的自动化流程，专为本地靶场和授权测试设计。
 
 ![Python](https://img.shields.io/badge/python-3.8+-blue)
@@ -373,4 +375,29 @@ MIT License
 - [架构与安全护栏](docs/ARCHITECTURE.md)
 - [文档索引](docs/INDEX.md)
 - [已知问题](KNOWN-ISSUES.md)
+
+
+---
+
+## 快速开始
+
+```bash
+# 0) 依赖（仅本地靶场 / 授权测试）
+pip install -r requirements.txt
+
+# 1) 起自带烟测靶场（内置 6 类漏洞）
+python labtest/app.py
+
+# 2) 护栏自检：非回环/内网目标会被直接拒绝
+python main.py guard check http://127.0.0.1:8080
+
+# 3) 爬虫 → AI 判定 → 非破坏性验证（结果同时写入结构化证据库）
+python main.py scan http://127.0.0.1:8080 --max-pages 25 --out report.md
+
+# 4) 查看证据库（阳性/阴性都留证，逐条 sha256）
+python main.py evidence list --status confirmed
+```
+
+其他子命令：`recon <URL>`、`verify <URL> --vuln <type>`、`evidence export <out.json>`、
+`intercept check "<command>"`、`llm-pool status`（完整列表见 `python main.py --help`）。
 
