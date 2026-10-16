@@ -364,12 +364,6 @@ python labtest/app.py 8099
 
 ---
 
-## 许可证
-
-MIT License
-
----
-
 ## 文档
 
 - [架构与安全护栏](docs/ARCHITECTURE.md)
@@ -385,7 +379,14 @@ MIT License
 
 > 上面是真实输出：**回环靶场放行、公网目标被拒、危险命令被拦**（模型池名称已脱敏）。
 
-## 快速开始
+---
+
+## 快速开始（统一 CLI）
+
+两种入口等价，任选一种：
+
+- 「一分钟上手」里的 `scan.py` / `verify.py` / `evidence.py` 是**单文件入口**，适合只跑某一步
+- 下面的 `main.py <子命令>` 是**统一 CLI**，一条命令串起全流程
 
 ```bash
 # 0) 依赖（仅本地靶场 / 授权测试）
@@ -406,4 +407,29 @@ python main.py evidence list --status confirmed
 
 其他子命令：`recon <URL>`、`verify <URL> --vuln <type>`、`evidence export <out.json>`、
 `intercept check "<command>"`、`llm-pool status`（完整列表见 `python main.py --help`）。
+
+---
+
+## 反馈 · 合作
+
+> 如果你在使用时发现了任何问题，可以给我发消息或者私信我。不过最好不要私信，本人社恐。欢迎大佬给我的项目提意见。
+> 如果你使用时发生了错误或者没法使用，也可以修改我的项目。申请项目合作人。
+
+| 你想做的事 | 点哪里 |
+| --- | --- |
+| 跑不起来 / 有报错 | [提 Bug 报告](https://github.com/xunwmw/VulnScope/issues/new?template=bug_report.md) |
+| 想要新功能 / 提意见 | [提功能建议](https://github.com/xunwmw/VulnScope/issues/new?template=feature_request.md) |
+| **想一起做这个项目（申请项目合作人）** | [提交合作者申请](https://github.com/xunwmw/VulnScope/issues/new?template=collaborator_request.md) |
+| 已经改好了 | 直接发 Pull Request |
+
+「申请项目合作人」就是 GitHub 的仓库协作者（Collaborator）：你提申请，我会在 **Settings → Collaborators** 里把你加进来，
+通过后你有这个仓库的写权限（能建分支、提 PR、管 Issue），比一直 fork 省事。
+
+跑之前建议先看 [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md)：Python 版本、4 个 pip 依赖、国内直连实测、HuggingFace 镜像、官方安装链接与官方 WARP 用法都在里面。
+
+---
+
+## 许可证
+
+MIT License
 
