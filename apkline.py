@@ -1,13 +1,21 @@
-﻿#!/usr/bin/env python3
-"""apkline.py 鈥斺€?App 鍒嗘瀽娴佹按绾匡紙鎶撳寘 / 闈欐€?/ 鍘熺敓hook / 閲嶆墦鍖?/ 鎶ュ憡锛?
-涓€鏉″懡浠よ窇瀹?App 绫婚」鐩殑鍙栬瘉锛?  python apkline.py static  --apk y.apk          # 闈欐€佸垎鏋愶紙绾疨ython锛屾棤渚濊禆锛?  python apkline.py proxy   on|off               # 璧?鍋滄姄鍖呴摼璺紙Kali mitmproxy + 鎵嬫満浠ｇ悊锛?  python apkline.py capture --pkg <鍖呭悕> --seconds 40
-  python apkline.py repack  --apk y.apk          # 娉ㄥ叆 frida-gadget + 閲嶇鍚嶏紙Kali objection锛?  python apkline.py hook    --seconds 45         # 鍘熺敓灞傚姩鎬?hook锛圱LS/鏂囦欢/杩炴帴/鍛戒护锛?  python apkline.py report  --apk y.apk          # 姹囨€绘垚 Markdown 鎶ュ憡
-  python apkline.py all     --apk y.apk --pkg <鍖呭悕>
+#!/usr/bin/env python3
+"""apkline.py —— App 分析流水线（抓包 / 静态 / 原生hook / 重打包 / 报告）
 
-璁捐绾︽潫锛堟湰椤圭洰瀹炴祴寰楀嚭锛夛細
-  路 vivo ROM 鎷︽埅涓€鍒囪嚜鍔ㄥ畨瑁?鈫?瑁?APK 蹇呴』浜哄伐鐐?瀹夎"锛堣剼鏈彧璐熻矗鎶婃枃浠舵帹涓婂幓骞跺彂璧凤級
-  路 frida Java 妗ュ湪 Android 6(API23) 涓嶅彲鐢?鈫?hook 鍙仛鍘熺敓灞?  路 鎶撳寘鏃ュ織鍚簩杩涘埗 鈫?瑙ｆ瀽蹇呴』鐢?grep -a / 浜岃繘鍒跺畨鍏ㄨ鍙?  路 Kali 鏃?sudo 鈫?宸ュ叿璧?~/.local/bin 杞摼锛屼笉渚濊禆 apt
-  路 澧冨璧勬簮锛坅pktool 绛夛級蹇呴』寮€ WARP锛岀敤瀹屽叧
+一条命令跑完 App 类项目的取证：
+  python apkline.py static  --apk y.apk          # 静态分析（纯Python，无依赖）
+  python apkline.py proxy   on|off               # 起/停抓包链路（Kali mitmproxy + 手机代理）
+  python apkline.py capture --pkg <包名> --seconds 40
+  python apkline.py repack  --apk y.apk          # 注入 frida-gadget + 重签名（Kali objection）
+  python apkline.py hook    --seconds 45         # 原生层动态 hook（TLS/文件/连接/命令）
+  python apkline.py report  --apk y.apk          # 汇总成 Markdown 报告
+  python apkline.py all     --apk y.apk --pkg <包名>
+
+设计约束（本项目实测得出）：
+  · vivo ROM 拦截一切自动安装 → 装 APK 必须人工点"安装"（脚本只负责把文件推上去并发起）
+  · frida Java 桥在 Android 6(API23) 不可用 → hook 只做原生层
+  · 抓包日志含二进制 → 解析必须用 grep -a / 二进制安全读取
+  · Kali 无 sudo → 工具走 ~/.local/bin 软链，不依赖 apt
+  · 境外资源（apktool 等）必须开 WARP，用完关
 """
 import argparse
 import json
@@ -29,22 +37,24 @@ CFG = {
     "kali_vm": "kali-linux-2026.2-virtualbox-amd64",
     "kali_user": "kali",
     "kali_pass": "kali",
-    "phone": "192.168.x.x:5555",
-    "proxy_host": "192.168.x.x",
-    # 2026-10-12 21:52 鏀癸細瀹夸富 8080 琚?Steam(steamwebhelper) 鍗犵敤锛孷Box 杞彂
-    # mitm8080 鍘熷厛 hostIP 涓虹┖锛堢粦 0.0.0.0锛屽灞€鍩熺綉鏁炲紑锛夈€傜幇鏀逛负 127.0.0.1:18080 -> guest:8080銆?    # 娉ㄦ剰锛歡uest 鍐?mitmdump 浠嶇洃鍚?8080锛堜笉鏀?Kali 渚э級锛屽彧鏀瑰涓讳晶鏄犲皠绔彛銆?    "proxy_port": 18080,
+    "phone": "192.168.31.66:5555",
+    "proxy_host": "192.168.31.194",
+    # 2026-10-12 21:52 改：宿主 8080 被 Steam(steamwebhelper) 占用，VBox 转发
+    # mitm8080 原先 hostIP 为空（绑 0.0.0.0，对局域网敞开）。现改为 127.0.0.1:18080 -> guest:8080。
+    # 注意：guest 内 mitmdump 仍监听 8080（不改 Kali 侧），只改宿主侧映射端口。
+    "proxy_port": 18080,
     "host_only_ip": "192.168.56.1",
     "host_only_port": 27042,
     "kali_tools": "/home/kali/tools",
     "kali_buildtools": "/home/kali/tools/bt/android-14",
     "kali_mitm_log": "/tmp/mitm.log",
     "outdir": str(pathlib.Path(__file__).parent / "appline-out"),
-    "frida": r"frida",
+    "frida": r"C:\Users\Administrator\.dsh\dsh-runtimes\dsh-primary-runtime\dependencies\python\Scripts\frida.exe",
 }
 OUT = pathlib.Path(CFG["outdir"])
 
 
-# ---------------- 鍩虹鎵ц ----------------
+# ---------------- 基础执行 ----------------
 def sh(cmd, **kw):
     kw.setdefault("capture_output", True)
     kw.setdefault("text", True)
@@ -63,7 +73,7 @@ def adb(*args):
 
 
 def ga(script_text, name=None):
-    """鎶婅剼鏈嫹杩?Kali 骞朵互 kali 鐢ㄦ埛鎵ц銆?""
+    """把脚本拷进 Kali 并以 kali 用户执行。"""
     name = name or f"_apkline_{int(time.time())}.sh"
     local = OUT / name
     OUT.mkdir(parents=True, exist_ok=True)
@@ -78,7 +88,7 @@ def ga(script_text, name=None):
 GA_ENV = f'export PATH=$PATH:~/.local/bin:{CFG["kali_buildtools"]}:{CFG["kali_tools"]}/platform-tools\n'
 
 
-# ---------------- 1. 闈欐€佸垎鏋愶紙绾?Python锛屾棤澶栭儴渚濊禆锛?---------------
+# ---------------- 1. 静态分析（纯 Python，无外部依赖）----------------
 INTERESTING = [
     (r"https?://[A-Za-z0-9._~:/?#\[\]@!$&'()*+,;=%-]{6,}", "URL"),
     (r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(?::\d+)?\b", "IP"),
@@ -127,35 +137,35 @@ def static_apk(apk: str) -> dict:
     return res
 
 
-# ---------------- 2. 鎶撳寘閾捐矾 ----------------
+# ---------------- 2. 抓包链路 ----------------
 def proxy_on():
-    log("[proxy] 鍚姩 mitmproxy锛圞ali锛?)
+    log("[proxy] 启动 mitmproxy（Kali）")
     ga(GA_ENV + "pkill -f mitmdump; sleep 1; "
        "setsid nohup mitmdump -p 8080 --set confdir=/home/kali/.mitmproxy --set flow_detail=2 "
        "</dev/null > /tmp/mitm.log 2>&1 & disown; sleep 5; "
        "echo MITM_LISTEN=$(ss -tln | grep -c ':8080')", "_apkline_mitm.sh")
-    log("[proxy] 涓绘満 127.0.0.1:18080 鈫?Kali 8080 绔彛杞彂")
+    log("[proxy] 主机 127.0.0.1:18080 → Kali 8080 端口转发")
     sh([CFG["vbox"], "controlvm", CFG["kali_vm"], "natpf1", "mitm18080,tcp,127.0.0.1,18080,,8080"])
-    log("[proxy] 鎵嬫満渚ц缃唬鐞?)
+    log("[proxy] 手机侧设置代理")
     adb("shell", f"settings put global http_proxy {CFG['proxy_host']}:{CFG['proxy_port']}")
     rc, o, _ = adb("shell", "settings get global http_proxy")
-    log("  鈫?, o.strip())
-    log("[proxy] 鎻愰啋锛氶渶纭繚鎵嬫満涓婂凡瀹夎 mitmproxy CA锛堣缃啋瀹夊叏鈫掍粠瀛樺偍瀹夎锛?)
+    log("  →", o.strip())
+    log("[proxy] 提醒：需确保手机上已安装 mitmproxy CA（设置→安全→从存储安装）")
 
 
 def proxy_off():
-    log("[proxy] 鍏抽棴鎵嬫満浠ｇ悊")
+    log("[proxy] 关闭手机代理")
     adb("shell", "settings put global http_proxy :0")
-    log("[proxy] 鍋?mitmproxy")
+    log("[proxy] 停 mitmproxy")
     ga(GA_ENV + "pkill -f mitmdump; echo stopped", "_apkline_mitm_stop.sh")
 
 
 def capture(pkg: str, seconds: int = 40) -> dict:
     ga(GA_ENV + f": > {CFG['kali_mitm_log']}; echo cleared", "_apkline_clear.sh")
-    log(f"[capture] 鍚姩 App {pkg}")
+    log(f"[capture] 启动 App {pkg}")
     log("  ", adb("shell", f"monkey -p {pkg} -c android.intent.category.LAUNCHER 1")[1].strip()[:120])
     time.sleep(seconds)
-    log("[capture] 瑙ｆ瀽鏃ュ織")
+    log("[capture] 解析日志")
     script = GA_ENV + f'''
 L={CFG['kali_mitm_log']}
 echo "LINES=$(wc -l < $L)"
@@ -188,7 +198,7 @@ echo "CAPTURE-DONE"
     return data
 
 
-# ---------------- 3. 閲嶆墦鍖呮敞鍏?gadget ----------------
+# ---------------- 3. 重打包注入 gadget ----------------
 def repack(apk: str, arch: str = "armeabi-v7a") -> dict:
     local = OUT / pathlib.Path(apk).name
     OUT.mkdir(parents=True, exist_ok=True)
@@ -221,14 +231,14 @@ echo REPACK-DONE
 
 
 def install_patched(local_apk: str) -> str:
-    """鎺ㄥ埌鎵嬫満骞跺彂璧峰畨瑁咃紙vivo 闇€浜哄伐鐐?瀹夎"锛夈€?""
+    """推到手机并发起安装（vivo 需人工点"安装"）。"""
     adb("push", local_apk, "/data/local/tmp/_patched.apk")
-    log("[install] 璇风幇鍦ㄥ湪鎵嬫満涓婄偣銆愬畨瑁呫€戔€?)
+    log("[install] 请现在在手机上点【安装】…")
     rc, out, err = adb("shell", "pm install -r /data/local/tmp/_patched.apk")
     return out.strip()
 
 
-# ---------------- 4. 鍘熺敓灞?hook ----------------
+# ---------------- 4. 原生层 hook ----------------
 NATIVE_JS = r'''
 function hx(p,n){ try{ var v=new Uint8Array(Memory.readByteArray(p,n)); var s=''; for(var i=0;i<v.length;i++){ var h=v[i].toString(16); s+=(h.length==1?'0':'')+h; } return s; }catch(e){ return 'ERR'; } }
 function L(t,m){ console.log('['+t+'] '+m); }
@@ -257,35 +267,35 @@ def hook(seconds: int = 45, app: str = "Gadget") -> dict:
     return {"events": events, "raw": out, "ok": "READY" in out}
 
 
-# ---------------- 5. 鎶ュ憡 ----------------
+# ---------------- 5. 报告 ----------------
 def report(apk: str = None, cap: dict = None, sta: dict = None, rep: dict = None) -> str:
     OUT.mkdir(parents=True, exist_ok=True)
-    md = ["# App 鍒嗘瀽鎶ュ憡锛坅pkline 鑷姩鐢熸垚锛?, ""]
+    md = ["# App 分析报告（apkline 自动生成）", ""]
     if apk:
-        md += [f"- **鏍锋湰**锛歚{apk}`", ""]
+        md += [f"- **样本**：`{apk}`", ""]
     if sta:
-        md += ["## 涓€銆侀潤鎬佸垎鏋?, "",
-               f"- 澶у皬锛歿sta['size']:,} 瀛楄妭 锝?sha256锛歚{sta['sha256']}`",
-               f"- 鏉＄洰锛歿sta['entries']} 锝?dex锛歿', '.join(sta['dex'])} 锝?鎻愬彇瀛楃涓诧細{sta['strings_total']}", ""]
+        md += ["## 一、静态分析", "",
+               f"- 大小：{sta['size']:,} 字节 ｜ sha256：`{sta['sha256']}`",
+               f"- 条目：{sta['entries']} ｜ dex：{', '.join(sta['dex'])} ｜ 提取字符串：{sta['strings_total']}", ""]
         for tag, vals in sta.get("hits", {}).items():
-            md += [f"### {tag}锛坽len(vals)}锛?, "```"] + vals[:25] + ["```", ""]
+            md += [f"### {tag}（{len(vals)}）", "```"] + vals[:25] + ["```", ""]
     if cap:
-        md += ["## 浜屻€佹姄鍖呯粨鏋?, "",
-               f"- 鏃ュ織琛屾暟锛歿cap['lines']}", "", "### 鍩熷悕", "```"] + cap["domains"][:25] + ["```", ""]
+        md += ["## 二、抓包结果", "",
+               f"- 日志行数：{cap['lines']}", "", "### 域名", "```"] + cap["domains"][:25] + ["```", ""]
         if cap["requests"]:
-            md += ["### 璇锋眰锛堟柟娉?涓绘満 璺緞锛?, "```"] + cap["requests"][:30] + ["```", ""]
+            md += ["### 请求（方法 主机 路径）", "```"] + cap["requests"][:30] + ["```", ""]
         if cap["auth"]:
-            md += ["### 閴存潈/鏍囪瘑澶?, "```"] + cap["auth"][:20] + ["```", ""]
+            md += ["### 鉴权/标识头", "```"] + cap["auth"][:20] + ["```", ""]
         if cap["body_keys"]:
-            md += ["### 璇锋眰浣撴晱鎰熷瓧娈?, "```"] + cap["body_keys"][:20] + ["```", ""]
+            md += ["### 请求体敏感字段", "```"] + cap["body_keys"][:20] + ["```", ""]
         if cap["plaintext_http"]:
-            md += ["### 鈿狅笍 鏄庢枃 HTTP 璇锋眰锛堜腑闂翠汉鎶曟瘨闈級", "```"] + cap["plaintext_http"][:15] + ["```", ""]
+            md += ["### ⚠️ 明文 HTTP 请求（中间人投毒面）", "```"] + cap["plaintext_http"][:15] + ["```", ""]
     if rep:
-        md += ["## 涓夈€侀噸鎵撳寘锛坒rida-gadget锛?, "", "```", rep["output"][-1200:], "```", ""]
-    md += ["## 鍥涖€佸緟浜哄伐瀹屾垚", "",
-           "- [ ] 鎵嬫満涓婄偣銆愬畨瑁呫€戣閲嶆墦鍖呯増锛坴ivo ROM 鎷︽埅鑷姩瀹夎锛?,
-           "- [ ] 鎿嶄綔 App 1 鍒嗛挓浠ヤ骇鐢熻涓猴紙hook 鎵嶈兘鎶撳埌浜嬩欢锛?,
-           "- [ ] Java 灞傚垎鏋愰渶 Android 7+ 璁惧锛坒rida 17 鐨?Java 妗ヤ笉鏀寔 API 23锛?, ""]
+        md += ["## 三、重打包（frida-gadget）", "", "```", rep["output"][-1200:], "```", ""]
+    md += ["## 四、待人工完成", "",
+           "- [ ] 手机上点【安装】装重打包版（vivo ROM 拦截自动安装）",
+           "- [ ] 操作 App 1 分钟以产生行为（hook 才能抓到事件）",
+           "- [ ] Java 层分析需 Android 7+ 设备（frida 17 的 Java 桥不支持 API 23）", ""]
     p = OUT / "app-report.md"
     p.write_text("\n".join(md), encoding="utf-8")
     return str(p)
@@ -293,7 +303,7 @@ def report(apk: str = None, cap: dict = None, sta: dict = None, rep: dict = None
 
 # ---------------- CLI ----------------
 def main():
-    ap = argparse.ArgumentParser(description="App 鍒嗘瀽娴佹按绾?)
+    ap = argparse.ArgumentParser(description="App 分析流水线")
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("static"); p.add_argument("--apk", required=True)
     p = sub.add_parser("proxy"); p.add_argument("action", choices=["on", "off"])
@@ -309,54 +319,53 @@ def main():
     if a.cmd == "static":
         res = static_apk(a.apk)
         (OUT / "static.json").write_text(json.dumps(res, ensure_ascii=False, indent=1), encoding="utf-8")
-        log(f"[static] 鏉＄洰={res['entries']} dex={res['dex']} 瀛楃涓?{res['strings_total']}")
+        log(f"[static] 条目={res['entries']} dex={res['dex']} 字符串={res['strings_total']}")
         for tag, vals in res["hits"].items():
-            log(f"  {tag}: {len(vals)} 鏉★紝渚嬶細{vals[:3]}")
-        log("  鈫?, OUT / "static.json")
+            log(f"  {tag}: {len(vals)} 条，例：{vals[:3]}")
+        log("  →", OUT / "static.json")
     elif a.cmd == "proxy":
         proxy_on() if a.action == "on" else proxy_off()
     elif a.cmd == "capture":
         res = capture(a.pkg, a.seconds)
         (OUT / "capture.json").write_text(json.dumps(res, ensure_ascii=False, indent=1), encoding="utf-8")
-        log(f"[capture] 琛屾暟={res['lines']} 鍩熷悕={len(res['domains'])} 璇锋眰={len(res['requests'])}")
+        log(f"[capture] 行数={res['lines']} 域名={len(res['domains'])} 请求={len(res['requests'])}")
         for d in res["domains"][:10]:
             log("   ", d)
         if res["plaintext_http"]:
-            log("  鈿狅笍 鏄庢枃 HTTP锛?)
+            log("  ⚠️ 明文 HTTP：")
             for x in res["plaintext_http"][:5]:
                 log("   ", x)
-        log("  鈫?, OUT / "capture.json")
+        log("  →", OUT / "capture.json")
     elif a.cmd == "repack":
         res = repack(a.apk, a.arch)
         (OUT / "repack.json").write_text(json.dumps(res, ensure_ascii=False, indent=1), encoding="utf-8")
-        log(f"[repack] 浜х墿: {res['local_path']}")
+        log(f"[repack] 产物: {res['local_path']}")
     elif a.cmd == "install":
         log(install_patched(a.apk))
     elif a.cmd == "hook":
         res = hook(a.seconds, a.app)
-        log(f"[hook] ok={res['ok']} 浜嬩欢={len(res['events'])}")
+        log(f"[hook] ok={res['ok']} 事件={len(res['events'])}")
         for e in res["events"][:30]:
             log("   ", e)
     elif a.cmd == "report":
         def load(p):
             return json.loads(pathlib.Path(p).read_text(encoding="utf-8")) if p and pathlib.Path(p).exists() else None
-        log("鎶ュ憡 鈫?, report(a.apk, load(a.cap), load(a.sta), load(OUT / "repack.json")))
+        log("报告 →", report(a.apk, load(a.cap), load(a.sta), load(OUT / "repack.json")))
     elif a.cmd == "all":
-        log("=== 1/4 闈欐€佸垎鏋?===")
+        log("=== 1/4 静态分析 ===")
         sta = static_apk(a.apk)
         (OUT / "static.json").write_text(json.dumps(sta, ensure_ascii=False, indent=1), encoding="utf-8")
-        log("=== 2/4 寮€鎶撳寘閾捐矾 ===")
+        log("=== 2/4 开抓包链路 ===")
         proxy_on()
-        log("=== 3/4 鎶撳寘 ===")
+        log("=== 3/4 抓包 ===")
         cap = capture(a.pkg, 40)
         (OUT / "capture.json").write_text(json.dumps(cap, ensure_ascii=False, indent=1), encoding="utf-8")
-        log("=== 4/4 閲嶆墦鍖?===")
+        log("=== 4/4 重打包 ===")
         rep = repack(a.apk)
         (OUT / "repack.json").write_text(json.dumps(rep, ensure_ascii=False, indent=1), encoding="utf-8")
-        log("鎶ュ憡 鈫?, report(a.apk, cap, sta, rep))
+        log("报告 →", report(a.apk, cap, sta, rep))
         proxy_off()
 
 
 if __name__ == "__main__":
     main()
-

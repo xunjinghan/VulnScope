@@ -1,7 +1,10 @@
-﻿"""AI 澶ц剳锛氭妸鍊欓€夌偣浜ょ粰璞嗗寘鍒ゅ畾銆?
-澶嶇敤宸茬粡璋冮€氱殑銆岃眴鍖?CDP 閫氶亾銆嶏紙dsh-tools/doubao-cdp.mjs锛夛紝
-鎵€浠ヤ笉棰濆鑺遍挶锛堣蛋鐢ㄦ埛宸蹭粯璐圭殑璞嗗寘棰濆害锛夛紝涔熶笉闇€瑕佷换浣?API key銆?
-鍓嶇疆锛氳眴鍖呴渶甯﹁皟璇曠鍙ｈ繍琛?  powershell -File dsh-tools\\doubao-agent-start.ps1
+"""AI 大脑：把候选点交给豆包判定。
+
+复用已经调通的「豆包 CDP 通道」（dsh-tools/doubao-cdp.mjs），
+所以不额外花钱（走用户已付费的豆包额度），也不需要任何 API key。
+
+前置：豆包需带调试端口运行
+  powershell -File dsh-tools\\doubao-agent-start.ps1
 """
 import os
 import pathlib
@@ -16,7 +19,7 @@ except Exception:  # noqa: BLE001
     pass
 
 NODE = os.environ.get("DSH_NODE") or (
-    r"node"
+    r"C:\Users\Administrator\.dsh\dsh-runtimes\dsh-primary-runtime\dependencies\node\bin\node.exe"
 )
 DOUBAO = pathlib.Path(__file__).resolve().parents[1] / "doubao-cdp.mjs"
 
@@ -26,7 +29,7 @@ def available() -> bool:
 
 
 def ask_doubao(prompt: str, timeout: int = 300) -> str:
-    """鎶?prompt 鍐欐枃浠跺悗浜ょ粰璞嗗寘锛堥伩鍏嶅懡浠よ缂栫爜闂锛夛紝杩斿洖绾枃鏈瓟妗堛€?""
+    """把 prompt 写文件后交给豆包（避免命令行编码问题），返回纯文本答案。"""
     tmp = tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8", newline="\n")
     try:
         tmp.write(prompt)
@@ -36,15 +39,15 @@ def ask_doubao(prompt: str, timeout: int = 300) -> str:
             capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout,
         )
         out = (proc.stdout or "") + (proc.stderr or "")
-        # 鎶娿€孨ode 宕╀簡 / 璞嗗寘娌＄瓟涓娿€嶅綋澶辫触锛岀粷涓嶆妸鎶ラ敊鏂囨湰娣疯繘鎶ュ憡
+        # 把「Node 崩了 / 豆包没答上」当失败，绝不把报错文本混进报告
         err_markers = ("ReferenceError", "SyntaxError", "TypeError", "Node.js v", "FAILED", "Timeout", "timed out")
         if any(m in out for m in err_markers) and "===== ANSWER" not in out:
-            raise RuntimeError("璞嗗寘閫氶亾鎵ц澶辫触锛歕n" + out.strip()[-800:])
+            raise RuntimeError("豆包通道执行失败：\n" + out.strip()[-800:])
         if "===== ANSWER" in out:
             tail = out.split("===== ANSWER", 1)[1]
             ans = tail.split("\n", 1)[1].strip() if "\n" in tail else tail.strip()
             if not ans:
-                raise RuntimeError("璞嗗寘杩斿洖浜嗙┖绛旀")
+                raise RuntimeError("豆包返回了空答案")
             return ans
         return out.strip()
     finally:
@@ -57,6 +60,5 @@ def ask_doubao(prompt: str, timeout: int = 300) -> str:
 if __name__ == "__main__":
     print("node:", NODE, os.path.exists(NODE))
     print("doubao script:", DOUBAO, DOUBAO.exists())
-    print("\n--- 杩為€氭€ф祴璇?---")
-    print(ask_doubao("鍙洖澶嶅洓涓瓧锛氶€氶亾姝ｅ父"))
-
+    print("\n--- 连通性测试 ---")
+    print(ask_doubao("只回复四个字：通道正常"))
