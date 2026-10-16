@@ -19,7 +19,7 @@ except Exception:  # noqa: BLE001
     pass
 
 NODE = os.environ.get("DSH_NODE") or (
-    r"C:\Users\Administrator\.dsh\dsh-runtimes\dsh-primary-runtime\dependencies\node\bin\node.exe"
+    os.path.expanduser(r"~\\.dsh\dsh-runtimes\dsh-primary-runtime\dependencies\node\bin\node.exe")
 )
 DOUBAO = pathlib.Path(__file__).resolve().parents[1] / "doubao-cdp.mjs"
 
