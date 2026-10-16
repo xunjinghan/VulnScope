@@ -300,7 +300,7 @@ class Interceptor:
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="VulnScope 操作拦截器")
+    parser = argparse.ArgumentParser(description="shoucuo-vuln-bot 操作拦截器")
     parser.add_argument("--config", default="intercept_rules.json", help="规则配置文件")
     parser.add_argument("--list", action="store_true", help="列出所有规则")
     parser.add_argument("--stats", action="store_true", help="显示统计")

@@ -1,4 +1,4 @@
-"""VulnScope 统一 CLI 入口。
+"""shoucuo-vuln-bot 统一 CLI 入口。
 
 用法:
   python main.py scan <URL> [--max-pages 25] [--out report.md]
@@ -99,7 +99,7 @@ def cmd_llm_pool_status(args):
 
 
 def main():
-    parser = argparse.ArgumentParser(prog="vulnscope", description="VulnScope AI 自动化漏洞挖掘工具集")
+    parser = argparse.ArgumentParser(prog="vulnscope", description="shoucuo-vuln-bot AI 自动化漏洞挖掘工具集")
     sub = parser.add_subparsers(dest="command", required=True)
 
     # scan

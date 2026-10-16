@@ -190,7 +190,7 @@ def quick_evidence(
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="VulnScope 证据存储")
+    parser = argparse.ArgumentParser(description="shoucuo-vuln-bot 证据存储")
     parser.add_argument("--dir", default="evidence", help="证据目录")
     parser.add_argument("--summary", action="store_true", help="显示统计")
     parser.add_argument("--list", action="store_true", help="列出所有证据")

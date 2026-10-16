@@ -139,7 +139,7 @@ def platform_block_message(reason: str) -> str:
     （换 payload、重编码、重试）——既无效又错误。
     """
     return (
-        "【VulnScope 平台管控·非目标防御】此调用被平台拦截。\n"
+        "【shoucuo-vuln-bot 平台管控·非目标防御】此调用被平台拦截。\n"
         f"原因：{reason}\n"
         "此操作被禁止，请换一个思路，不要尝试绕过平台管控。"
     )
@@ -225,7 +225,7 @@ def assert_target_allowed(url: str) -> str:
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="VulnScope 安全护栏")
+    parser = argparse.ArgumentParser(description="shoucuo-vuln-bot 安全护栏")
     parser.add_argument("urls", nargs="*", help="要校验的 URL 列表")
     parser.add_argument("--audit", action="store_true", help="显示审计日志统计")
     parser.add_argument("--save-audit", metavar="PATH", help="保存审计日志到文件")

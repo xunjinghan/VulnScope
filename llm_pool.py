@@ -302,7 +302,7 @@ def default_pool() -> LLMPool:
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="VulnScope LLM 连接池")
+    parser = argparse.ArgumentParser(description="shoucuo-vuln-bot LLM 连接池")
     parser.add_argument("--config", default="llm_config.json", help="配置文件路径")
     parser.add_argument("--health", action="store_true", help="执行健康检查")
     parser.add_argument("--test", metavar="MODEL", help="测试指定模型")

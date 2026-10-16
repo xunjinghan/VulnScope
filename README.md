@@ -1,4 +1,4 @@
-﻿# VulnScope — AI 自动化漏洞挖掘工具集
+﻿# shoucuo-vuln-bot — AI 自动化漏洞挖掘工具集
 
 **EN** — Automated vulnerability-hunting pipeline: crawl → LLM triage → **non-destructive verify** → report. Guardrails are hard-coded (loopback/intranet only, read-only by default) and every finding is stored with a sha256.
 
@@ -14,7 +14,7 @@
 
 ## 这是什么？
 
-VulnScope 是一个**四步流水线**的自动化漏洞挖掘工具集：
+shoucuo-vuln-bot 是一个**四步流水线**的自动化漏洞挖掘工具集：
 
 ```
 目标 URL → 爬虫(crawl) → AI判定(llm) → 非破坏性验证(verify) → 报告(report)
@@ -34,7 +34,7 @@ VulnScope 是一个**四步流水线**的自动化漏洞挖掘工具集：
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      VulnScope 架构                          │
+│                      shoucuo-vuln-bot 架构                          │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌────────┐ │
@@ -295,7 +295,7 @@ python evidence.py --export report.json  # 导出报告
 
 ARTEX 是一个 Go + Next.js 的全栈 AI 渗透测试平台，因被滥用于攻击韩国金融机构而闭源。其核心设计被本项目借鉴：
 
-| ARTEX 设计 | VulnScope 实现 |
+| ARTEX 设计 | shoucuo-vuln-bot 实现 |
 |---|---|
 | `guard/` 安全边界层 | `guard.py` + `armor.py` |
 | 审计日志（AuditEntry） | `guard.AuditLog` |
@@ -316,7 +316,7 @@ ARTEX 是一个 Go + Next.js 的全栈 AI 渗透测试平台，因被滥用于�
 
 ## 与其他项目对比
 
-| 维度 | VulnScope | ARTEX | CyberStrike AI | sqlmap |
+| 维度 | shoucuo-vuln-bot | ARTEX | CyberStrike AI | sqlmap |
 |---|---|---|---|---|
 | 定位 | 轻量流水线工具集 | 全栈平台 | 多Agent平台 | 专项工具 |
 | 语言 | Python | Go+Next.js | TypeScript | Python |
@@ -417,9 +417,9 @@ python main.py evidence list --status confirmed
 
 | 你想做的事 | 点哪里 |
 | --- | --- |
-| 跑不起来 / 有报错 | [提 Bug 报告](https://github.com/xunwmw/VulnScope/issues/new?template=bug_report.md) |
-| 想要新功能 / 提意见 | [提功能建议](https://github.com/xunwmw/VulnScope/issues/new?template=feature_request.md) |
-| **想一起做这个项目（申请项目合作人）** | [提交合作者申请](https://github.com/xunwmw/VulnScope/issues/new?template=collaborator_request.md) |
+| 跑不起来 / 有报错 | [提 Bug 报告](https://github.com/xunwmw/shoucuo-vuln-bot/issues/new?template=bug_report.md) |
+| 想要新功能 / 提意见 | [提功能建议](https://github.com/xunwmw/shoucuo-vuln-bot/issues/new?template=feature_request.md) |
+| **想一起做这个项目（申请项目合作人）** | [提交合作者申请](https://github.com/xunwmw/shoucuo-vuln-bot/issues/new?template=collaborator_request.md) |
 | 已经改好了 | 直接发 Pull Request |
 
 「申请项目合作人」就是 GitHub 的仓库协作者（Collaborator）：你提申请，我会在 **Settings → Collaborators** 里把你加进来，
