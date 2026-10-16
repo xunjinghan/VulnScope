@@ -1,4 +1,4 @@
-﻿# shoucuo-vuln-bot — AI 自动化漏洞挖掘工具集
+# ⚔️ 全集中 · 挖洞之呼吸 — 手搓自动化漏洞挖掘流水线 VulnScope（爬虫 → AI 判定 → 非破坏性验证 → 报告）
 
 **EN** — Automated vulnerability-hunting pipeline: crawl → LLM triage → **non-destructive verify** → report. Guardrails are hard-coded (loopback/intranet only, read-only by default) and every finding is stored with a sha256.
 
