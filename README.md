@@ -365,3 +365,12 @@ python labtest/app.py 8099
 ## 许可证
 
 MIT License
+
+---
+
+## 文档
+
+- [架构与安全护栏](docs/ARCHITECTURE.md)
+- [文档索引](docs/INDEX.md)
+- [已知问题](KNOWN-ISSUES.md)
+
