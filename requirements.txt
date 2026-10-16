@@ -1,0 +1,6 @@
+# VulnScope 运行时依赖（按 import 提取；Python 3.8+）
+# 仅本地靶场 / 授权测试使用
+lxml>=5.0               # HTML 解析（爬虫与参数发现）
+yt-dlp>=2024.1.0        # 视频源信息读取（videoread.py）
+imageio-ffmpeg>=0.4.9   # 视频抽帧（videoread.py）
+faster-whisper>=1.0.0   # 语音转写（videoread.py，可选重依赖）
